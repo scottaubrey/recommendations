@@ -72,28 +72,6 @@ final class DefaultController
         return $mediaType;
     }
 
-    // TODO: remove? It's not in the api-raml, we are not using it for testing
-    // and it doesn't work anymore.
-    // SQLSTATE[42S22]: Column not found: 1054 Unknown column 'R.published' in 'order clause'
-    public function allAction(Request $request)
-    {
-        $page = $request->get('page', 1);
-        $perPage = $request->get('per-page', 100);
-        $offset = ($page - 1) * $perPage;
-
-        $mediaType = $this->acceptableRequest($request);
-        $version = $mediaType->getVersion() || self::CURRENT_VERSION;
-        $recommendations = $this->repo->slice($offset, $perPage);
-        $items = $this->hydrator->hydrateAll($recommendations);
-        $context = $this->createContext();
-        $context->setVersion($version);
-        $json = $this->serializer->serialize(RecommendationsResponse::fromModels($items, count($items)), 'json', $context);
-
-        return new Response($json, 200, [
-            'Content-Type' => (string) (new MediaType(self::MEDIA_TYPE, $version)),
-        ]);
-    }
-
     public function indexAction(Request $request, string $type, string $id)
     {
         if ($type !== 'article') {
@@ -105,8 +83,6 @@ final class DefaultController
 
         $this->logger->debug('Rule model', ['id' => $id, 'type' => $type]);
         $requestModel = $this->repo->getOne($id, $type);
-        // This is meant to be an optimisation, but due to lack of cache elsewhere it currently slows it down.
-        //$this->hydrator->extractRelatedFrom($requestModel);
         $recommendations = $this->rules->getRecommendations($requestModel);
         $items = $this->hydrator->hydrateAll($recommendations);
         $context = $this->createContext();

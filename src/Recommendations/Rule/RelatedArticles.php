@@ -4,7 +4,6 @@ namespace eLife\Recommendations\Rule;
 
 use eLife\ApiSdk\Collection\Sequence;
 use eLife\ApiSdk\Model\Article;
-use eLife\ApiSdk\Model\ArticleVersion;
 use eLife\ApiSdk\Model\ExternalArticle as ExternalArticleModel;
 use eLife\Recommendations\Relationships\ManyToManyRelationship;
 use eLife\Recommendations\Rule;
@@ -16,10 +15,7 @@ use eLife\Recommendations\RuleModelRepository;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-/**
- * TODO: rename into RelatedArticles?
- */
-class BidirectionalRelationship implements Rule
+class RelatedArticles implements Rule
 {
     use PersistRule;
     use RepoRelations;
@@ -68,6 +64,7 @@ class BidirectionalRelationship implements Rule
      */
     public function resolveRelations(RuleModel $input): array
     {
+        error_log($input->getType());
         $this->debug($input, 'Looking for related articles');
         try {
             $related = $this->getRelatedArticles($input->getId());
@@ -100,10 +97,10 @@ class BidirectionalRelationship implements Rule
             ->map(function (Article $article) use ($input) {
                 $id = $article->getId();
                 $type = $article->getType();
-                $date = $article instanceof ArticleVersion ? $article->getPublishedDate() : null;
                 if ($article instanceof ExternalArticleModel) {
-                    $relationship = new ManyToManyRelationship($input, new RuleModel($input->getId().'-'.$article->getUri(), $type, $date, $isSynthetic = true));
+                    $relationship = new ManyToManyRelationship($input, RuleModel::synthetic($input->getId().'-'.$article->getUri(), $type));
                 } else {
+                    $date = $article->getPublishedDate();
                     $relationship = new ManyToManyRelationship($input, new RuleModel($article->getId(), $type, $date));
                 }
                 $this->debug($input, sprintf('Found related article %s<%s>', $type, $id), [
