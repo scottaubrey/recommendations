@@ -83,7 +83,6 @@ class Hydration
         }
         list(, $originalArticleId, $relatedIndex) = $matches;
 
-/** @var ExternalArticle $externalArticle */
         // TODO: this uses sdk but it should really go through SingleItemRepository (doesn't have a method for this) or in any case through a cache
         $externalArticle = $this->sdk
             ->getRelatedArticles($originalArticleId)

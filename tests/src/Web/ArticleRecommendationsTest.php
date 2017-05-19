@@ -47,7 +47,7 @@ class ArticleRecommendationsTest extends WebTestCase
         $this->relateArticlesByIds('003', ['002']);
         $this->relateArticlesByIds('004', ['002', '006']);
         $this->relateArticlesByIds('006', ['004']);
-        $this->relateArticlesByIds('008', ['008-http://www.example.com/008-0']);
+        $this->relateArticlesByIds('008', ['008-http://www.example.com/008-0', '007']);
 
         $this->getRulesProcess()->import($a1['model']);
         $this->getRulesProcess()->import($a2['model']);
@@ -178,12 +178,15 @@ class ArticleRecommendationsTest extends WebTestCase
         $this->jsonRequest('GET', '/recommendations/article/008');
         $json = $this->getJsonResponse();
 
-        $this->assertEquals(2, $json->total);
+        $this->assertEquals(3, $json->total);
 
-        $this->assertEquals('external-article', $json->items[0]->type);
-        $this->assertEquals('http://www.example.com/008-0', $json->items[0]->uri);
+        $this->assertEquals('feature', $json->items[0]->type);
+        $this->assertEquals('007', $json->items[0]->id);
 
-        $this->assertEquals('006', $json->items[1]->id);
-        $this->assertEquals('research-article', $json->items[1]->type);
+        $this->assertEquals('external-article', $json->items[1]->type);
+        $this->assertEquals('http://www.example.com/008-0', $json->items[1]->uri);
+
+        $this->assertEquals('research-article', $json->items[2]->type);
+        $this->assertEquals('006', $json->items[2]->id);
     }
 }
