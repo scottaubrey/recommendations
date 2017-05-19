@@ -88,7 +88,7 @@ class Hydration
         $externalArticle = $this->sdk
             ->getRelatedArticles($originalArticleId)
             ->filter(function (Article $relatedArticle) use ($relatedIndex) {
-                return $relatedArticle->getUri() === $relatedIndex;
+                return $relatedArticle instanceof ExternalArticle && $relatedArticle->getUri() === $relatedIndex;
             })
             ->toArray()[0] ?? null;
 
