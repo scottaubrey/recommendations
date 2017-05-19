@@ -11,7 +11,9 @@
 namespace eLife\Recommendations\Process;
 
 use Assert\Assertion;
+use eLife\ApiSdk\Model\Article;
 use eLife\ApiSdk\Model\ArticleVersion;
+use eLife\ApiSdk\Model\ExternalArticle;
 use eLife\ApiSdk\Model\HasSubjects;
 use eLife\ApiSdk\Model\PodcastEpisode;
 use eLife\ApiSdk\Model\PodcastEpisodeChapter;
@@ -19,6 +21,7 @@ use eLife\ApiSdk\Model\PodcastEpisodeChapterModel;
 use eLife\Bus\Queue\SingleItemRepository;
 use eLife\Recommendations\Rule\Common\MicroSdk;
 use eLife\Recommendations\RuleModel;
+use InvalidArgumentException;
 
 class Hydration
 {
@@ -73,18 +76,40 @@ class Hydration
         return new PodcastEpisodeChapterModel($episode, $chapter);
     }
 
+    public function getExternalArticleByOriginalArticleId($id): ExternalArticle
+    {
+        if (!preg_match('/^(\d+)-(.+)$/', $id, $matches)) {
+            throw new InvalidArgumentException("Not well-formed composite id of external article: $id");
+        }
+        list(, $originalArticleId, $relatedIndex) = $matches;
+
+/** @var ExternalArticle $externalArticle */
+        // TODO: this uses sdk but it should really go through SingleItemRepository (doesn't have a method for this) or in any case through a cache
+        $externalArticle = $this->sdk
+            ->getRelatedArticles($originalArticleId)
+            ->filter(function (Article $relatedArticle) use ($relatedIndex) {
+                return $relatedArticle->getUri() === $relatedIndex;
+            })
+            ->toArray()[0] ?? null;
+
+        return $externalArticle;
+    }
+
     public function hydrateOne(RuleModel $item)
     {
         if ($item->isSynthetic()) {
             switch ($item->getType()) {
                 case 'podcast-episode-chapter':
                     return $this->getPodcastEpisodeChapterById($item->getId());
+                case 'external-article':
+                    return $this->getExternalArticleByOriginalArticleId($item->getId());
             }
         }
 
         return $this->repo->get($this->convertType($item->getType()), $item->getId());
     }
 
+    // TODO: delete after having extracted all knowledge. It's dead code
     public function extractRelatedFrom(RuleModel $model)
     {
         $model = $this->hydrateOne($model);

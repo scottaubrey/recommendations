@@ -16,6 +16,9 @@ use eLife\Recommendations\RuleModelRepository;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
+/**
+ * TODO: rename into RelatedArticles?
+ */
 class BidirectionalRelationship implements Rule
 {
     use PersistRule;
@@ -57,10 +60,11 @@ class BidirectionalRelationship implements Rule
      * Given a model (type + id) from SQS, calculate which entities need
      * relations added for the specific domain rule.
      *
-     * Return is an array of tuples containing an input and an on where `input`
-     * is the model to be added and `on` is the target node. In plain english
-     * given a podcast containing articles it would return an array where the
-     * podcast is every `input` and each article is the `output`.
+     * Return is an array of tuples containing an `input` and an `on` where
+     * `input` * is the model to be added and `on` is the target node.
+     * In plain english given an article related to other articles it would
+     * return an array * where the first is every `input` and each related
+     * article is the `output`.
      */
     public function resolveRelations(RuleModel $input): array
     {
@@ -86,7 +90,7 @@ class BidirectionalRelationship implements Rule
             ->filter(function ($item) use ($input) {
                 $isArticle = $item instanceof Article;
                 if (!$isArticle) {
-                    $this->debug($input, sprintf('Found unknown article type: %s', get_class($item)), [
+                    $this->warning($input, sprintf('Found unknown article type: %s', get_class($item)), [
                         'model' => $item,
                     ]);
                 }
@@ -95,9 +99,13 @@ class BidirectionalRelationship implements Rule
             })
             ->map(function (Article $article) use ($input) {
                 $id = $article->getId();
-                $type = $article instanceof ExternalArticleModel ? 'external-article' : $article->getType();
+                $type = $article->getType();
                 $date = $article instanceof ArticleVersion ? $article->getPublishedDate() : null;
-                $relationship = new ManyToManyRelationship($input, new RuleModel($article->getId(), $type, $date));
+                if ($article instanceof ExternalArticleModel) {
+                    $relationship = new ManyToManyRelationship($input, new RuleModel($input->getId().'-'.$article->getUri(), $type, $date, $isSynthetic = true));
+                } else {
+                    $relationship = new ManyToManyRelationship($input, new RuleModel($article->getId(), $type, $date));
+                }
                 $this->debug($input, sprintf('Found related article %s<%s>', $type, $id), [
                     'relationship' => $relationship,
                     'article' => $article,

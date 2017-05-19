@@ -5,7 +5,6 @@ namespace eLife\Recommendations\Rule;
 use eLife\ApiSdk\Model\Article;
 use eLife\ApiSdk\Model\ArticleVersion;
 use eLife\ApiSdk\Model\Collection;
-use eLife\ApiSdk\Model\ExternalArticle;
 use eLife\Recommendations\Relationships\ManyToManyRelationship;
 use eLife\Recommendations\Rule;
 use eLife\Recommendations\Rule\Common\MicroSdk;
@@ -57,7 +56,7 @@ final class CollectionContents implements Rule
             })
             ->map(function (Article $article) use ($input) {
                 $id = $article->getId();
-                $type = $article instanceof ExternalArticle ? 'external-article' : $article->getType();
+                $type = $article->getType();
                 $date = $article instanceof ArticleVersion ? $article->getPublishedDate() : null;
                 $relationship = new ManyToManyRelationship(new RuleModel($id, $type, $date), $input);
                 $this->debug($input, sprintf('Found article in content %s<%s>', $type, $id), [
