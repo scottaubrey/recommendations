@@ -39,6 +39,7 @@ use eLife\Recommendations\Rule\MostRecentWithSubject;
 use eLife\Recommendations\Rule\NormalizedPersistence;
 use eLife\Recommendations\Rule\PodcastEpisodeContents;
 use eLife\Recommendations\Rule\RelatedArticles;
+use eLife\Recommendations\Rule\RelationsOrder;
 use eLife\Recommendations\RuleModelRepository;
 use GuzzleHttp\Client;
 use JMS\Serializer\EventDispatcher\EventDispatcher;
@@ -268,6 +269,7 @@ final class Kernel implements MinimalKernel
                 $app['logger'],
                 new NormalizedPersistence(
                     $app['rules.repository'],
+                    new RelationsOrder(),
                     /* 1 - 10 */
                     new RelatedArticles($app['rules.micro_sdk'], $app['rules.repository'], $app['logger']),
                     /* 11 */
@@ -436,7 +438,7 @@ final class Kernel implements MinimalKernel
             'exception' => $e,
         ]);
         $errorMessage = '
-            Internal server error – We are unable to server your request, 
+            Internal server error – We are unable to serve your request, 
             but it has been logged and we will look into the issue.
         ';
         // This should never be hit, it is a last resort.

@@ -22,16 +22,15 @@ class RelatedArticles implements Rule
     use RuleModelLogger;
 
     private $sdk;
-    private $repo;
     private $logger;
 
     public function __construct(
         MicroSdk $sdk,
-        RuleModelRepository $repo,
+        RuleModelRepository $repository,
         LoggerInterface $logger = null
     ) {
         $this->sdk = $sdk;
-        $this->repo = $repo;
+        $this->repository = $repository;
         $this->logger = $logger;
     }
 
@@ -64,7 +63,6 @@ class RelatedArticles implements Rule
      */
     public function resolveRelations(RuleModel $input): array
     {
-        error_log($input->getType());
         $this->debug($input, 'Looking for related articles');
         try {
             $related = $this->getRelatedArticles($input->getId());
