@@ -244,7 +244,7 @@ final class Kernel implements MinimalKernel
         };
 
         $app['logger'] = function (Application $app) {
-            $logger = new LoggingFactory($app['config']['file_logs_path'], 'recommendations-api');
+            $logger = new LoggingFactory($app['config']['file_logs_path'], 'recommendations-api', $app['config']['logging_level']);
 
             return $logger->logger();
         };
