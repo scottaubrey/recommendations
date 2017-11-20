@@ -163,13 +163,18 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
         ->containing(Identifier::article($id))
         ->slice(0, 100);
 
+    $ignoreSelf = function (Article $article) use ($id) {
+        return $article->getId() !== $id;
+    };
+
     $mostRecent = $app['elife.api_sdk']->search()
         ->forType('research-advance', 'research-article', 'scientific-correspondence', 'short-report', 'tools-resources', 'replication-study')
         ->sortBy('date')
-        ->slice(0, 5);
+        ->slice(0, 5)
+        ->filter($ignoreSelf);
 
     $mostRecentWithSubject = new PromiseSequence($article
-        ->then(function (ArticleHistory $history) use ($app) {
+        ->then(function (ArticleHistory $history) use ($app, $ignoreSelf) {
             $article = $history->getVersions()[0];
 
             if ($article->getSubjects()->isEmpty()) {
@@ -182,7 +187,8 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
                 ->forType('editorial', 'feature', 'insight', 'research-advance', 'research-article', 'registered-report', 'replication-study', 'scientific-correspondence', 'short-report', 'tools-resources')
                 ->sortBy('date')
                 ->forSubject($subject->getId())
-                ->slice(0, 5);
+                ->slice(0, 5)
+                ->filter($ignoreSelf);
         }));
 
     $podcastEpisodeChapters = $app['elife.api_sdk']->podcastEpisodes()
