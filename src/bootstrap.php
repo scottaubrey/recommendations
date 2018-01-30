@@ -22,11 +22,12 @@ use eLife\ApiSdk\Model\Model;
 use eLife\ApiSdk\Model\PodcastEpisode;
 use eLife\ApiSdk\Model\PodcastEpisodeChapterModel;
 use eLife\ContentNegotiator\Silex\ContentNegotiationProvider;
-use eLife\Logging\LoggingFactory;
+use eLife\Logging\Silex\LoggerProvider;
 use eLife\Ping\Silex\PingControllerProvider;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use InvalidArgumentException;
+use LogicException;
 use Negotiation\Accept;
 use Psr\Log\LogLevel;
 use Silex\Application;
@@ -49,12 +50,14 @@ $app = new Application([
     'api.uri' => $config['api.uri'] ?? 'https://api.elifesciences.org/',
     'api.timeout' => $config['api.timeout'] ?? 1,
     'debug' => $config['debug'] ?? false,
+    'logger.channel' => 'recommendations',
     'logger.path' => $config['logger.path'] ?? __DIR__.'/../var/logs',
     'logger.level' => $config['logger.level'] ?? LogLevel::INFO,
 ]);
 
 $app->register(new ApiProblemProvider());
 $app->register(new ContentNegotiationProvider());
+$app->register(new LoggerProvider());
 $app->register(new PingControllerProvider());
 
 if ($app['debug']) {
@@ -65,6 +68,10 @@ if ($app['debug']) {
         'profiler.cache_dir' => __DIR__.'/../var/cache/profiler',
         'profiler.mount_prefix' => '/_profiler',
     ]);
+    $app->get('/error', function () use ($app) {
+        $app['logger']->debug('Simulating error');
+        throw new LogicException('Simulated error');
+    });
 }
 
 $app['elife.guzzle_client.handler'] = function () {
@@ -104,14 +111,6 @@ $app['elife.api_sdk'] = function () use ($app) {
 
 $app['elife.api_sdk.serializer'] = function () use ($app) {
     return $app['elife.api_sdk']->getSerializer();
-};
-
-$app['elife.logger.factory'] = function (Application $app) {
-    return new LoggingFactory($app['logger.path'], 'recommendations-api', $app['logger.level']);
-};
-
-$app['logger'] = function (Application $app) {
-    return $app['elife.logger.factory']->logger();
 };
 
 $app->get('/recommendations/{contentType}/{id}', function (Request $request, Accept $type, string $contentType, string $id) use ($app) {

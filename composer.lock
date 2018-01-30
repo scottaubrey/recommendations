@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "fc5b7856bccea5beda232884b5156d15",
+    "content-hash": "66ee48522a7933684d69e3f59051be87",
     "packages": [
         {
             "name": "beberlei/assert",
@@ -173,16 +173,16 @@
         },
         {
             "name": "elife/api-problem",
-            "version": "v1.0.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/elifesciences/api-problem-php.git",
-                "reference": "ad657b3fec405a8278fba36ff58b578016bf14bb"
+                "reference": "c1893237467f7038accb2b502a8be4631a2ea406"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/elifesciences/api-problem-php/zipball/ad657b3fec405a8278fba36ff58b578016bf14bb",
-                "reference": "ad657b3fec405a8278fba36ff58b578016bf14bb",
+                "url": "https://api.github.com/repos/elifesciences/api-problem-php/zipball/c1893237467f7038accb2b502a8be4631a2ea406",
+                "reference": "c1893237467f7038accb2b502a8be4631a2ea406",
                 "shasum": ""
             },
             "require": {
@@ -191,6 +191,7 @@
                 "symfony/http-foundation": "^2.7 || ^3.0"
             },
             "require-dev": {
+                "guzzlehttp/psr7": "^1.0",
                 "phpunit/phpunit": "^5.7.7 || ^6.0",
                 "pimple/pimple": "^3.0",
                 "silex/silex": "^2.0",
@@ -203,7 +204,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.0.x-dev"
+                    "dev-master": "1.1.x-dev"
                 }
             },
             "autoload": {
@@ -216,7 +217,7 @@
                 "MIT"
             ],
             "description": "eLife Sciences RFC 7807 handler",
-            "time": "2017-11-06T13:14:02+00:00"
+            "time": "2018-01-29T12:37:14+00:00"
         },
         {
             "name": "elife/api-sdk",
@@ -322,24 +323,40 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/elifesciences/logging-sdk-php.git",
-                "reference": "e4bfc0624dbd8340aee6dfc3d88e93a13a29dfc2"
+                "reference": "81a10f8a88f528ff516b1a83e957a91a1d391c75"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/elifesciences/logging-sdk-php/zipball/e4bfc0624dbd8340aee6dfc3d88e93a13a29dfc2",
-                "reference": "e4bfc0624dbd8340aee6dfc3d88e93a13a29dfc2",
+                "url": "https://api.github.com/repos/elifesciences/logging-sdk-php/zipball/81a10f8a88f528ff516b1a83e957a91a1d391c75",
+                "reference": "81a10f8a88f528ff516b1a83e957a91a1d391c75",
                 "shasum": ""
             },
             "require": {
-                "monolog/monolog": "^1.22"
+                "monolog/monolog": "^1.22",
+                "php": "^7.0",
+                "psr/log": "^1.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "^5.6"
+                "crell/api-problem": "^2.0",
+                "elife/api-problem": "^1.0",
+                "mikey179/vfsstream": "^1.6",
+                "phpunit/phpunit": "^5.7.7 || ^6.0",
+                "pimple/pimple": "^3.0",
+                "silex/silex": "^2.0",
+                "symfony/browser-kit": "^3.0",
+                "symfony/debug": "^2.8 || ^3.0",
+                "symfony/http-kernel": "^2.7 || ^3.0"
             },
             "suggest": {
-                "ext/newrelic": "Enables the Monitoring class"
+                "ext/newrelic": "Enables the Monitoring class",
+                "silex/silex": "^2.0, to use LoggerProvider"
             },
             "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "eLife\\Logging\\": "./src"
@@ -350,7 +367,7 @@
                 "MIT"
             ],
             "description": "eLife Sciences logging SDK",
-            "time": "2017-08-17T14:03:04+00:00"
+            "time": "2018-01-30T11:28:03+00:00"
         },
         {
             "name": "elife/ping",
