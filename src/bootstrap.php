@@ -15,7 +15,6 @@ use eLife\ApiSdk\Collection\PromiseSequence;
 use eLife\ApiSdk\Collection\Sequence;
 use eLife\ApiSdk\Model\Article;
 use eLife\ApiSdk\Model\ArticleHistory;
-use eLife\ApiSdk\Model\ExternalArticle;
 use eLife\ApiSdk\Model\HasPublishedDate;
 use eLife\ApiSdk\Model\Identifier;
 use eLife\ApiSdk\Model\Model;
@@ -202,30 +201,6 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
 
     $recommendations = $relations;
 
-    $appendFirstThatDoesNotAlreadyExist = function (Sequence $recommendations, Sequence $toInsert) : Sequence {
-        foreach ($toInsert as $item) {
-            foreach ($recommendations as $recommendation) {
-                if (
-                    get_class($item) === get_class($recommendation)
-                    &&
-                    (
-                        ($item instanceof ExternalArticle && $item->getId() === $recommendation->getId())
-                        ||
-                        ($item instanceof PodcastEpisodeChapterModel && $item->getEpisode()->getNumber() === $recommendation->getEpisode()->getNumber() && $item->getChapter()->getNumber() === $recommendation->getChapter()->getNumber())
-                        ||
-                        $item->getIdentifier() == $recommendation->getIdentifier()
-                    )
-                ) {
-                    continue 2;
-                }
-            }
-
-            return $recommendations->append($item);
-        }
-
-        return $recommendations;
-    };
-
     try {
         all([$article, $relations, $collections, $podcastEpisodeChapters, $mostRecentWithSubject])->wait();
     } catch (BadResponse $e) {
@@ -240,7 +215,9 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
 
     $recommendations = $recommendations->append(...$collections);
     $recommendations = $recommendations->append(...$podcastEpisodeChapters);
-    $recommendations = $appendFirstThatDoesNotAlreadyExist($recommendations, $mostRecentWithSubject);
+    if ($recommendations->count() < 3) {
+        $recommendations = append_if_not_exists($recommendations, $mostRecentWithSubject, 3 - $recommendations->count());
+    }
 
     $content = [
         'total' => count($recommendations),
