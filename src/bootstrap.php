@@ -25,6 +25,7 @@ use eLife\Logging\Silex\LoggerProvider;
 use eLife\Ping\Silex\PingControllerProvider;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
+use function GuzzleHttp\Promise\all;
 use InvalidArgumentException;
 use LogicException;
 use Negotiation\Accept;
@@ -39,7 +40,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use function GuzzleHttp\Promise\all;
 
 $configFile = __DIR__.'/../config.php';
 
@@ -224,7 +224,7 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
         'total' => count($recommendations),
     ];
 
-    $recommendations = $recommendations->slice(($page * $perPage) - $perPage, $perPage);
+    $recommendations = $recommendations->slice(((int) $page * $perPage) - $perPage, $perPage);
 
     if ($page < 1 || (0 === count($recommendations) && $page > 1)) {
         throw new NotFoundHttpException('No page '.$page);

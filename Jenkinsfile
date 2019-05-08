@@ -5,10 +5,14 @@ elifePipeline {
         commit = elifeGitRevision()
     }
 
-    stage 'Project tests', {
-        lock('recommendations--ci') {
-            builderDeployRevision 'recommendations--ci', commit
-            builderProjectTests 'recommendations--ci', '/srv/recommendations', ['/srv/recommendations/build/phpunit.xml']
+    node('containers-jenkins-plugin') {
+        stage 'Build image', {
+                checkout scm
+                dockerComposeBuild commit
+        }
+
+        stage 'Project tests', {
+            dockerProjectTests 'recommendations', commit
         }
     }
 
