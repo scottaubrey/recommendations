@@ -101,6 +101,29 @@ abstract class ApiTestCase extends TestCase
         );
     }
 
+    final protected function mockArticlePoACall(string $id, ArticlePoA $article)
+    {
+        $this->storage->save(
+            new Request(
+                'GET',
+                "http://api.elifesciences.org/articles/$id",
+                [
+                    'Accept' => implode(', ', [
+                        new MediaType(ArticlesClient::TYPE_ARTICLE_POA, 3),
+                        new MediaType(ArticlesClient::TYPE_ARTICLE_VOR, 4),
+                    ]),
+                ]
+            ),
+            new Response(
+                200,
+                [
+                    'Content-Type' => new MediaType(ArticlesClient::TYPE_ARTICLE_POA, 3),
+                ],
+                json_encode($this->normalize($article, false))
+            )
+        );
+    }
+
     final protected function mockCollectionsCall(
         int $total,
         array $collections,
@@ -262,11 +285,27 @@ abstract class ApiTestCase extends TestCase
         );
     }
 
-    final protected function createArticlePoA(string $id, string $type = 'research-article', array $subjects = [], DateTimeImmutable $publishedDate = null) : ArticlePoA
+    final protected function createArticlePoA(string $id, string $type = 'research-article', array $subjects = [], DateTimeImmutable $publishedDate = null, $snippet = true) : ArticlePoA
     {
         if (!$publishedDate) {
             $publishedDate = DateTimeImmutable::createFromFormat(DATE_ATOM, '2016-03-28T00:00:00Z');
         }
+
+        $complete = !$snippet ? [
+            'abstract' => [
+                'content' => [
+                    [
+                        'type' => 'paragraph',
+                        'text' => "Abstract $id",
+                    ],
+                ],
+            ],
+            'copyright' => [
+                'license' => 'CC-BY-4.0',
+                'holder' => 'Author et al.',
+                'statement' => 'Copyright.',
+            ],
+        ] : [];
 
         return $this->denormalize(array_filter([
             'status' => 'poa',
@@ -283,7 +322,7 @@ abstract class ApiTestCase extends TestCase
             'subjects' => array_map(function (string $subject) {
                 return array_fill_keys(['id', 'name'], $subject);
             }, $subjects),
-        ]), ArticlePoA::class);
+        ] + $complete), ArticlePoA::class, $snippet);
     }
 
     final protected function createCollection(string $id) : Collection

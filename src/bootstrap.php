@@ -15,6 +15,8 @@ use eLife\ApiSdk\Collection\PromiseSequence;
 use eLife\ApiSdk\Collection\Sequence;
 use eLife\ApiSdk\Model\Article;
 use eLife\ApiSdk\Model\ArticleHistory;
+use eLife\ApiSdk\Model\ArticleVersion;
+use eLife\ApiSdk\Model\Block;
 use eLife\ApiSdk\Model\HasPublishedDate;
 use eLife\ApiSdk\Model\Identifier;
 use eLife\ApiSdk\Model\Model;
@@ -236,11 +238,36 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
     }
 
     $content['items'] = $recommendations
-        ->map(function (Model $model) use ($app) {
-            return json_decode($app['elife.api_sdk.serializer']->serialize($model, 'json', [
-                'snippet' => true,
-                'type' => true,
-            ]), true);
+        ->map(function (Model $model) use ($app, $type) {
+            $shouldContainAbstract = $type->getParameter('version') > 1;
+            if ($shouldContainAbstract && $model instanceof ArticleVersion) {
+                $abstract = $app['elife.api_sdk']->articles()
+                    ->get($model->getId())
+                    ->then(function (ArticleVersion $complete) use ($app) {
+                        if ($complete->getAbstract()) {
+                            $abstract = [
+                                'content' => $complete->getAbstract()->getContent()->map(function (Block $block) use ($app) {
+                                    return json_decode($app['elife.api_sdk.serializer']->serialize($block, 'json'), true);
+                                })->toArray(),
+                            ];
+
+                            if ($complete->getAbstract()->getDoi()) {
+                                $abstract['doi'] = $complete->getAbstract()->getDoi();
+                            }
+
+                            return $abstract;
+                        }
+                    })
+                    ->wait();
+                if ($abstract) {
+                    $data['abstract'] = $abstract;
+                }
+            }
+
+            return ($data ?? []) + json_decode($app['elife.api_sdk.serializer']->serialize($model, 'json', [
+                    'snippet' => true,
+                    'type' => true,
+                ]), true);
         })
         ->toArray();
 
@@ -252,6 +279,7 @@ $app->get('/recommendations/{contentType}/{id}', function (Request $request, Acc
         $headers
     );
 })->before($app['negotiate.accept'](
+    'application/vnd.elife.recommendations+json; version=2',
     'application/vnd.elife.recommendations+json; version=1'
 ));
 

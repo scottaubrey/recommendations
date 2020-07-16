@@ -33,7 +33,8 @@ final class RecommendationsTest extends WebTestCase
             'application/vnd.elife.recommendations+json' => 200,
             'application/vnd.elife.recommendations+json; version=0' => 406,
             'application/vnd.elife.recommendations+json; version=1' => 200,
-            'application/vnd.elife.recommendations+json; version=2' => 406,
+            'application/vnd.elife.recommendations+json; version=2' => 200,
+            'application/vnd.elife.recommendations+json; version=3' => 406,
             'text/plain' => 406,
         ];
 
@@ -58,7 +59,7 @@ final class RecommendationsTest extends WebTestCase
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(['total' => 0, 'items' => []], $response->getContent());
         $this->assertTrue($response->isCacheable());
@@ -71,33 +72,38 @@ final class RecommendationsTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $insight = $this->createArticlePoA('1235', 'insight');
-        $shortReport = $this->createArticlePoA('1236', 'short-report');
-        $research1 = $this->createArticlePoA('1237', 'research-article', [], new DateTimeImmutable('yesterday'));
-        $research2 = $this->createArticlePoA('1238', 'research-article', [], new DateTimeImmutable('today'));
-        $research3 = $this->createArticlePoA('1239', 'research-article', [], new DateTimeImmutable('2 days ago'));
+        $insightSnippet = $this->createArticlePoA('1235', 'insight');
+        $shortReportSnippet = $this->createArticlePoA('1236', 'short-report');
+        $research1Snippet = $this->createArticlePoA('1237', 'research-article', [], new DateTimeImmutable('yesterday'));
+        $research2Snippet = $this->createArticlePoA('1238', 'research-article', [], new DateTimeImmutable('today'));
+        $research3Snippet = $this->createArticlePoA('1239', 'research-article', [], new DateTimeImmutable('2 days ago'));
 
         $this->mockArticleVersionsCall('1234', [$this->createArticlePoA('1234')]);
-        $this->mockRelatedArticlesCall('1234', [$insight, $shortReport, $research1, $research2, $research3]);
+        $this->mockRelatedArticlesCall('1234', [$insightSnippet, $shortReportSnippet, $research1Snippet, $research2Snippet, $research3Snippet]);
         $this->mockCollectionsCall(0, [], 1, 100, [Identifier::article('1234')]);
         $this->mockPodcastEpisodesCall(0, [], 1, 100, [Identifier::article('1234')]);
+        $this->MockArticlePoACall('1235', $insight = $this->createArticlePoA('1235', 'insight', [], null, false));
+        $this->MockArticlePoACall('1236', $shortReport = $this->createArticlePoA('1236', 'short-report', [], null, false));
+        $this->MockArticlePoACall('1237', $research1 = $this->createArticlePoA('1237', 'research-article', [], new DateTimeImmutable('yesterday'), false));
+        $this->MockArticlePoACall('1238', $research2 = $this->createArticlePoA('1238', 'research-article', [], new DateTimeImmutable('today'), false));
+        $this->MockArticlePoACall('1239', $research3 = $this->createArticlePoA('1239', 'research-article', [], new DateTimeImmutable('2 days ago'), false));
 
         $client->request('GET', '/recommendations/article/1234');
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
                 'total' => 5,
-                'items' => [
-                    $this->normalize($research2),
-                    $this->normalize($research1),
-                    $this->normalize($research3),
-                    $this->normalize($insight),
-                    $this->normalize($shortReport),
-                ],
+                'items' => array_map([$this, 'normalize'], [
+                    $research2,
+                    $research1,
+                    $research3,
+                    $insight,
+                    $shortReport,
+                ]),
             ],
             $response->getContent()
         );
@@ -120,7 +126,7 @@ final class RecommendationsTest extends WebTestCase
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
@@ -155,7 +161,7 @@ final class RecommendationsTest extends WebTestCase
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
 
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
@@ -182,21 +188,20 @@ final class RecommendationsTest extends WebTestCase
         $this->mockCollectionsCall(0, [], 1, 100, [Identifier::article('1234')]);
         $this->mockPodcastEpisodesCall(0, [], 1, 100, [Identifier::article('1234')]);
         $this->mockSearchCall(0, [$this->createArticlePoA('1235', 'insight'), $this->createArticlePoA('1236', 'short-report'), $this->createArticlePoA('1237', 'research-article')], 1, 5, ['editorial', 'feature', 'insight', 'research-advance', 'research-article', 'research-communication', 'registered-report', 'replication-study', 'review-article', 'scientific-correspondence', 'short-report', 'tools-resources'], ['subject2']);
+        $this->MockArticlePoACall('1235', $insight = $this->createArticlePoA('1235', 'insight', [], null, false));
+        $this->MockArticlePoACall('1236', $shortReport = $this->createArticlePoA('1236', 'short-report', [], null, false));
+        $this->MockArticlePoACall('1237', $researchArticle = $this->createArticlePoA('1237', 'research-article', [], null, false));
 
         $client->request('GET', '/recommendations/article/1234');
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
                 'total' => 3,
-                'items' => [
-                    $this->normalize($this->createArticlePoA('1235', 'insight')),
-                    $this->normalize($this->createArticlePoA('1236', 'short-report')),
-                    $this->normalize($this->createArticlePoA('1237', 'research-article')),
-                ],
+                'items' => array_map([$this, 'normalize'], [$insight, $shortReport, $researchArticle]),
             ],
             $response->getContent()
         );
@@ -219,21 +224,24 @@ final class RecommendationsTest extends WebTestCase
         $this->mockPodcastEpisodesCall(0, [], 1, 100, [Identifier::article('1234')]);
         $this->mockPodcastEpisodeCall($episode1);
         $this->mockSearchCall(0, [$this->createArticlePoA('1236', 'short-report'), $this->createArticlePoA('1235', 'insight'), $this->createArticlePoA('1238', 'research-article'), $this->createArticlePoA('1237', 'research-article')], 1, 5, ['editorial', 'feature', 'insight', 'research-advance', 'research-article', 'research-communication', 'registered-report', 'replication-study', 'review-article', 'scientific-correspondence', 'short-report', 'tools-resources'], ['subject2']);
+        $this->MockArticlePoACall('1235', $insight = $this->createArticlePoA('1235', 'insight', [], null, false));
+        $this->MockArticlePoACall('1236', $shortReport = $this->createArticlePoA('1236', 'short-report', [], null, false));
+        $this->MockArticlePoACall('1238', $researchArticle = $this->createArticlePoA('1238', 'research-article', [], null, false));
 
         $client->request('GET', '/recommendations/article/1234');
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
                 'total' => 3,
-                'items' => [
-                    $this->normalize($this->createArticlePoA('1235', 'insight')), // from related articles
-                    $this->normalize($this->createArticlePoA('1236', 'short-report')), // from related articles
-                    $this->normalize($this->createArticlePoA('1238', 'research-article')), // from subject
-                ],
+                'items' => array_map([$this, 'normalize'], [
+                    $insight, // from related articles
+                    $shortReport, // from related articles
+                    $researchArticle, // from subject
+                ]),
             ],
             $response->getContent()
         );
@@ -256,18 +264,19 @@ final class RecommendationsTest extends WebTestCase
         $this->mockPodcastEpisodesCall(1, [$episode1], 1, 100, [Identifier::article('1234')]);
         $this->mockPodcastEpisodeCall($episode1);
         $this->mockSearchCall(0, [$this->createArticlePoA('1235', 'insight'), $this->createArticlePoA('1236', 'short-report'), $this->createArticlePoA('1238', 'research-article'), $this->createArticlePoA('1237', 'research-article')], 1, 5, ['editorial', 'feature', 'insight', 'research-advance', 'research-article', 'research-communication', 'registered-report', 'replication-study', 'review-article', 'scientific-correspondence', 'short-report', 'tools-resources'], ['subject2']);
+        $this->MockArticlePoACall('1235', $insight = $this->createArticlePoA('1235', 'insight', [], null, false));
 
         $client->request('GET', '/recommendations/article/1234');
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
                 'total' => 3,
                 'items' => [
-                    $this->normalize($this->createArticlePoA('1235', 'insight')),
+                    $this->normalize($insight),
                     $this->normalize($this->createCollection('1234')),
                     $this->normalize(new PodcastEpisodeChapterModel($episode1, $episode1->getChapters()[0])),
                 ],
@@ -289,18 +298,19 @@ final class RecommendationsTest extends WebTestCase
         $this->mockCollectionsCall(0, [], 1, 100, [Identifier::article('1234')]);
         $this->mockPodcastEpisodesCall(0, [], 1, 100, [Identifier::article('1234')]);
         $this->mockSearchCall(1, [$this->createArticlePoA('1234', 'research-article'), $this->createArticlePoA('1235', 'insight')], 1, 5, ['editorial', 'feature', 'insight', 'research-advance', 'research-article', 'research-communication', 'registered-report', 'replication-study', 'review-article', 'scientific-correspondence', 'short-report', 'tools-resources'], ['subject2']);
+        $this->MockArticlePoACall('1235', $insight = $this->createArticlePoA('1235', 'insight', [], null, false));
 
         $client->request('GET', '/recommendations/article/1234');
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
                 'total' => 1,
                 'items' => [
-                    $this->normalize($this->createArticlePoA('1235', 'insight')),
+                    $this->normalize($insight),
                 ],
             ],
             $response->getContent()
@@ -329,20 +339,23 @@ final class RecommendationsTest extends WebTestCase
         $this->mockPodcastEpisodeCall($episode1);
         $this->mockPodcastEpisodeCall($episode2);
         $this->mockSearchCall(0, [$this->createArticlePoA('1235', 'insight'), $this->createArticlePoA('1236', 'short-report'), $this->createArticlePoA('1238', 'research-article'), $this->createArticlePoA('1237', 'research-article')], 1, 5, ['editorial', 'feature', 'insight', 'research-advance', 'research-article', 'research-communication', 'registered-report', 'replication-study', 'review-article', 'scientific-correspondence', 'short-report', 'tools-resources'], ['subject2']);
+        $this->MockArticlePoACall('1235', $insight = $this->createArticlePoA('1235', 'insight', [], null, false));
+        $this->MockArticlePoACall('1236', $shortReport = $this->createArticlePoA('1236', 'short-report', [], null, false));
+        $this->MockArticlePoACall('1237', $researchArticle = $this->createArticlePoA('1237', 'research-article', [], null, false));
 
         $client->request('GET', '/recommendations/article/1234');
         $response = $client->getResponse();
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('application/vnd.elife.recommendations+json; version=1', $response->headers->get('Content-Type'));
+        $this->assertSame('application/vnd.elife.recommendations+json; version=2', $response->headers->get('Content-Type'));
         $this->assertResponseIsValid($response);
         $this->assertJsonStringEqualsJson(
             [
                 'total' => 8,
                 'items' => [
-                    $this->normalize($this->createArticlePoA('1237', 'research-article')),
-                    $this->normalize($this->createArticlePoA('1235', 'insight')),
-                    $this->normalize($this->createArticlePoA('1236', 'short-report')),
+                    $this->normalize($researchArticle),
+                    $this->normalize($insight),
+                    $this->normalize($shortReport),
                     $this->normalize($this->createCollection('1234')),
                     $this->normalize($this->createCollection('5678')),
                     $this->normalize(new PodcastEpisodeChapterModel($episode2, $episode1->getChapters()[0])),
